@@ -1,34 +1,53 @@
-"adams":
-  - firstname: ["Edwin", "E.", "E. P.", "Edwin Plimpton"]
-    url: https://en.wikipedia.org/wiki/Edwin_Plimpton_Adams
+"ding":
+   - firstname: ["Zihan"]
+     url: https://quantumiracle.github.io/webpage/
 
-"podolsky":
-  - firstname: ["Boris", "B.", "B. Y.", "Boris Yakovlevich"]
-    url: https://en.wikipedia.org/wiki/Boris_Podolsky
+"chen":
+   - firstname: ["Yuanpei"]
+     url: https://cypypccpy.github.io/
 
-"rosen":
-  - firstname: ["Nathan", "N."]
-    url: https://en.wikipedia.org/wiki/Nathan_Rosen
+"ren":
+   - firstname: ["Allen Z."]
+     url: https://allenzren.github.io/
 
-"bach":
-  - firstname: ["Johann Sebastian", "J. S."]
-    url: https://en.wikipedia.org/wiki/Johann_Sebastian_Bach
+"gu":
+   - firstname: ["Shixiang Shane"]
+     url: https://sites.google.com/view/gugurus/home
 
-  - firstname: ["Carl Philipp Emanuel", "C. P. E."]
-    url: https://en.wikipedia.org/wiki/Carl_Philipp_Emanuel_Bach
+"dong":
+   - firstname: ["Hao"]
+     url: https://zsdonghao.github.io/
 
-"przibram":
-  - firstname: ["Karl"]
-    url: https://link.springer.com/article/10.1007/s00016-019-00242-z
+"jin":
+   - firstname: ["Chi"]
+     url: https://sites.google.com/view/cjin/home
 
-"schrodinger":
-  - firstname: ["Erwin"]
-    url: https://en.wikipedia.org/wiki/Erwin_Schr%C3%B6dinger
+"deng":
+   - firstname: ["Congyue"]
+     url: https://cs.stanford.edu/~congyue/
 
-"lorentz":
-  - firstname: ["Hendrik Antoon"]
-    url: https://en.wikipedia.org/wiki/Hendrik_Lorentz
+"lum":
+   - firstname: ["Tyler"]
+     url: https://tylerlum.github.io/
 
-"planck":
-  - firstname: ["Max"]
-    url: https://en.wikipedia.org/wiki/Max_Planck
+"yang":
+   - firstname: ["Yaodong"]
+     url: https://www.yangyaodong.com/
+
+"bohg":
+   - firstname: ["Jeannette"]
+     url: https://web.stanford.edu/~bohg/
+
+"zhu":
+   - firstname: ["Yixin"]
+     url: https://yzhu.io/
+
+"guibas":
+   - firstname: ["Leonidas"]
+     url: https://geometry.stanford.edu/member/guibas/
+
+"you":
+   - firstname: ["Yang"]
+     url: https://qq456cvb.github.io/
+
+
