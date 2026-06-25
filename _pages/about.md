@@ -20,7 +20,7 @@ social: false # includes social icons at the bottom of the page
 
 <!-- Write your biography here. Tell the world about yourself. Link to your favorite [subreddit](http://reddit.com). You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder. -->
 
-I am a fourth-year undergraduate student at Peking University, advised by <a href="https://yzhu.io/">Prof. Yixin Zhu</a> and fortunated collaborate with [Prof. Yaodong Yang](https://www.yangyaodong.com/) at PKU and <a href="https://geometry.stanford.edu/member/guibas/">Prof. Leonidas J. Guibas</a> at Stanford remotely. In 2024 summer, I worked as a visiting research student at Stanford, advised by <a href="https://web.stanford.edu/~bohg/">Prof. Jeannette Bohg</a>.
+I am a first-year PhD student at Cornell University, advised by <a href="https://kuanfang.github.io/">Prof. Kuan Fang</a>. Previously, I was fortunate to work with <a href="https://yzhu.io/">Prof. Yixin Zhu</a> at Peking University, <a href="https://web.stanford.edu/~bohg/">Prof. Jeannette Bohg</a> at Stanford, and <a href="https://geometry.stanford.edu/member/guibas/">Prof. Leonidas J. Guibas</a> at Stanford.
 
 
 My long-term research goal is to achieve human-level robust sensorimotor coordination in robotics. I am also very interested in 3D Vision and Animation. My previous research has primarily focused on dexterous manipulation from a semantic perspective.

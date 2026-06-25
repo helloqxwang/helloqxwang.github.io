@@ -1,0 +1,10 @@
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/http_parser.rb-0.8.1/ext/ruby_http_parser
+/opt/homebrew/opt/ruby/bin/ruby extconf.rb
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/http_parser.rb-0.8.1/ext/ruby_http_parser
+make -j11 DESTDIR\= sitearchdir\=./.gem.20260625-68440-2nzv3y sitelibdir\=./.gem.20260625-68440-2nzv3y clean
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/http_parser.rb-0.8.1/ext/ruby_http_parser
+make -j11 DESTDIR\= sitearchdir\=./.gem.20260625-68440-2nzv3y sitelibdir\=./.gem.20260625-68440-2nzv3y
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/http_parser.rb-0.8.1/ext/ruby_http_parser
+make -j11 DESTDIR\= sitearchdir\=./.gem.20260625-68440-2nzv3y sitelibdir\=./.gem.20260625-68440-2nzv3y install
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/http_parser.rb-0.8.1/ext/ruby_http_parser
+make DESTDIR\= sitearchdir\=./.gem.20260625-68440-2nzv3y sitelibdir\=./.gem.20260625-68440-2nzv3y clean

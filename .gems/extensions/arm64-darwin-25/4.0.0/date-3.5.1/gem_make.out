@@ -1,0 +1,24 @@
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/date-3.5.1/ext/date
+/opt/homebrew/opt/ruby/bin/ruby extconf.rb
+checking for rb_category_warn()... yes
+checking for timezone in time.h with -Werror... yes
+checking for altzone in time.h with -Werror... no
+creating Makefile
+
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/date-3.5.1/ext/date
+make -j11 DESTDIR\= sitearchdir\=./.gem.20260625-70385-ionxxy sitelibdir\=./.gem.20260625-70385-ionxxy clean
+
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/date-3.5.1/ext/date
+make -j11 DESTDIR\= sitearchdir\=./.gem.20260625-70385-ionxxy sitelibdir\=./.gem.20260625-70385-ionxxy
+compiling compiling date_parse.c
+date_core.c
+compiling date_strftime.c
+compiling date_strptime.c
+linking shared-object date_core.bundle
+
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/date-3.5.1/ext/date
+make -j11 DESTDIR\= sitearchdir\=./.gem.20260625-70385-ionxxy sitelibdir\=./.gem.20260625-70385-ionxxy install
+/usr/bin/install -c -m 0755 date_core.bundle ./.gem.20260625-70385-ionxxy
+
+current directory: /Users/qianxu/Project/helloqxwang.github.io/.gems/gems/date-3.5.1/ext/date
+make DESTDIR\= sitearchdir\=./.gem.20260625-70385-ionxxy sitelibdir\=./.gem.20260625-70385-ionxxy clean

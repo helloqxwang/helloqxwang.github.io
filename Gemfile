@@ -1,4 +1,10 @@
 source 'https://rubygems.org'
+
+# Standard-library gems that Ruby 3.4+ no longer ships by default, but that
+# some plugins (jekyll-scholar -> citeproc-ruby/csl) still require at runtime.
+gem 'observer'
+gem 'ostruct'
+
 group :jekyll_plugins do
     gem 'classifier-reborn'
     gem 'jekyll'

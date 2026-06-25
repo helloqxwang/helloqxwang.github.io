@@ -1,0 +1,12 @@
+deploy:
+  provider: rubygems
+  api_key:
+    secure: bogX4TZmY9CN0RNW2jckfb06iGA2MUjd66ocwsMoKcA+wyHmKSm+cyEPxcVlB2anAHt4BkF2faqLfU6w4QNQFb26bJCLHdp+M3PE6AMh+4Xu8s6XcnViBffcRvvdohfeQQAQzjOoUZFSu/m4Xdd6aL4We3wMHL4EwlltO1cq/5Qo+RcGh+5k6w7562qsJJ3XNLtLAK/Cno3kH1YSRomDBiUgL56foX8FWjrXdXVkE3hDX42CXaB9zgvwaywCb8wZAlODO5A6X1Kqy+comp2nEjyjKNkTy7p44eq9kGg7WrcdjL3VE4RKBta6EgX4vY7++yFJnXs2CtPW0ZxoxItRuwllIYKgk4GQg0ctqw7H0s3zjNevUYlWoqomiOCcTt7HtIztBaFv2f8o+jWJTHfGVPobKhpZEmNUn3yEoR1ECbzyswFyn7jdBCkv+DdBaezMEcabtAHmMoGcW0qRuWCYsyvg3aKYtJBi3g0mWdKks6+TJcYhyWmEmiAWympSYPGQ22iLlOy0J410CRlDXXm58m8EgLfn3r9tCm3VXtBEhgWjOQ2lViKm8mJp0LfH9vWDcidrr5/aXwGWHyRx8ahYE3ByYF5jbrTNUmNAKTohi1YOGS7XTWwoHkoZeBoGvk0w9g8yfYY8UrI10iLer6Y/hWaogS9JADcRCkV9rgMxOrA=
+  gem: cssminify2
+  on:
+    tags: true
+    repo: digitalsparky/cssminify
+language: ruby
+rvm:
+- 2.3.1
+script: bundle exec rspec spec

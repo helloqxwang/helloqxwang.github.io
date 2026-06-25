@@ -200,6 +200,8 @@ exclude:
   - README.md
   - readme_preview/
   - vendor
+  - assets/jupyter/ # al-folio demo notebook; needs Jupyter installed to build, and isn't used on this site
+  - preview-site.command # local preview launcher (not part of the site)
 keep_files:
   - CNAME
   - .nojekyll
