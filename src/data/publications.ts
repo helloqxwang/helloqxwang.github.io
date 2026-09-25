@@ -16,6 +16,10 @@ export const publications: Publication[] = [
         "isSelf": true
       },
       {
+        "name": "Shengmiao Samuel Jin",
+        "href": "https://leumasnij.github.io/"
+      },
+      {
         "name": "Kuan Fang"
       }
     ],
