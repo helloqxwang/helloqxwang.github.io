@@ -467,6 +467,16 @@ p {
   color: var(--muted);
 }
 
+.footer-credit {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+}
+
+.footer-credit a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 @media (max-width: 860px) {
   .nav {
     align-items: flex-start;
