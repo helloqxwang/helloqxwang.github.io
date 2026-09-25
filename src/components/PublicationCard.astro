@@ -1,0 +1,46 @@
+---
+import type { Publication } from "../data/publications";
+
+type Props = {
+  publication: Publication;
+  featured?: boolean;
+};
+
+const { publication, featured = false } = Astro.props;
+---
+
+<article class:list={["publication-card", featured ? "publication-card--featured" : ""]}>
+  <div class="publication-card__media">
+    <img
+      class="publication-card__image"
+      src={publication.image}
+      alt={publication.imageAlt}
+      loading="lazy"
+    />
+  </div>
+  <div class="publication-card__body">
+    <div class="eyebrow">{publication.venue} {publication.year}</div>
+    <h2>{publication.title}</h2>
+    <p class="publication-card__authors">
+      {
+        publication.authors.map((author, index) => (
+          <>
+            {index > 0 && <span>, </span>}
+            {author.href ? (
+              <a href={author.href} class:list={[author.isSelf ? "is-self" : ""]}>
+                {author.name}
+              </a>
+            ) : (
+              <span class:list={[author.isSelf ? "is-self" : ""]}>{author.name}</span>
+            )}
+            {author.equalContribution && <span aria-label="equal contribution">*</span>}
+          </>
+        ))
+      }
+    </p>
+    {publication.award && <p class="publication-card__award">{publication.award}</p>}
+    {publication.links.length > 0 && <div class="link-row">
+      {publication.links.map((link) => <a href={link.href}>{link.label}</a>)}
+    </div>}
+  </div>
+</article>

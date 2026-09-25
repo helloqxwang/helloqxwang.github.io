@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Publications from "../components/Publications.astro";
+import PortraitStack from "../components/PortraitStack.astro";
+import Photography from "../components/Photography.astro";
+import { site } from "../data/site";
+---
+
+<BaseLayout>
+  <section class="hero shell" id="about">
+    <div class="hero__content">
+      <p class="eyebrow">About Me</p>
+      <h1>Qianxu Wang</h1>
+      <p class="about-copy">I am a second-year PhD student in Computer Science at <strong class="text-cornell">Cornell University</strong>, advised by <a class="advisor-link" href="https://kuanfang.github.io/"><strong>Prof. Kuan Fang</strong></a>. I am interested in robot manipulation that generalizes, including cross-embodiment transfer, semantic 3D representations for one-shot dexterous manipulation, and self-supervised adaptation.</p>
+      <p class="about-copy">Previously, I graduated with highest honors from <strong class="text-peking">Peking University</strong> with a bachelor’s degree in Computer Science. I was fortunate to work with <a class="advisor-link" href="https://yzhu.io/"><strong>Prof. Yixin Zhu</strong></a> at Peking University, <a class="advisor-link" href="https://web.stanford.edu/~bohg/"><strong>Prof. Jeannette Bohg</strong></a> at Stanford, and <a class="advisor-link" href="https://geometry.stanford.edu/member/guibas/"><strong>Prof. Leonidas J. Guibas</strong></a> at Stanford.</p>
+      <div class="button-row">
+        <a class="button" href="#publications">View Publications</a>
+        {/* CV hidden for now: <a class="button button--secondary" href="/cv/">Download CV</a> */}
+      </div>
+      <div class="social-links">
+        {site.socials.map((social) => <a href={social.href}>{social.label}</a>)}
+      </div>
+    </div>
+    <PortraitStack />
+  </section>
+
+  <section class="section shell" id="research">
+    <div class="section-heading">
+      <p class="eyebrow">Research</p>
+      <h2>Generalization in robot manipulation.</h2>
+    </div>
+    <div class="prose">
+      <p>My research focuses on generalization in robot manipulation across objects, environments, and embodiments. I develop visual and interaction representations that help robots transfer skills beyond the settings in which they were learned, drawing on pretrained vision models and prior manipulation experience. I am also interested in self-supervised adaptation at deployment, where robots use observations of new environments to refine their perception and behavior.</p>
+      <p>Feel free (and please do!) to reach out if you have any questions, comments about my research, or anything you'd like to discuss or share with me!</p>
+    </div>
+  </section>
+
+  <Publications />
+
+  <section class="section shell" id="misc">
+    <div class="section-heading">
+      <p class="eyebrow">Misc</p>
+      <h2>A few fun facts.</h2>
+    </div>
+    <div class="prose">
+      <p>I enjoy doing nails (and can do yours, too). I love photography and play squash.</p>
+    </div>
+  </section>
+  <Photography />
+</BaseLayout>

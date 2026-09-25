@@ -1,0 +1,41 @@
+# Order here is the display order. priority: 1 = featured, 0 = standard.
+# All landscapes span two columns; featured portraits are 1.5 columns wide.
+# caption: exif (default), none, or any custom text.
+# Optional metadata overrides: camera, lens, shutter, focal_length, aperture, iso.
+# Originals in Photos/ stay untouched. Missing EXIF fields are never guessed.
+defaults:
+  caption: exif
+photos:
+- file: DSC06320.JPG
+  priority: 1
+  alt: A quiet park with benches beneath green trees
+- file: DSC06380.JPG
+  priority: 0
+  alt: Red doors and a fire escape on a brick building
+- file: DSC06819.JPG
+  priority: 0
+  alt: A white alpaca in soft afternoon light
+- file: DSC06366.JPG
+  priority: 0
+  alt: Mailboxes along a leafy neighborhood sidewalk
+- file: DSC06871.JPG
+  priority: 0
+  alt: A giraffe reaching into a canopy of green leaves
+- file: DSC06378.JPG
+  priority: 0
+  alt: A person waiting at a neighborhood street corner
+- file: DSC06778.JPG
+  priority: 0
+  alt: A small rabbit in a sunlit clearing
+- file: DSC06391.JPG
+  priority: 0
+  alt: A sidewalk bordered by red petals and trees
+- file: DSC06401.JPG
+  priority: 0
+  alt: Soft yellow flowers beside a brick path
+- file: DSC07516.JPG
+  priority: 0
+  alt: Sunlight filtering through a leafy canopy
+- file: DSC07555.JPG
+  priority: 0
+  alt: A single water droplet suspended from a red edge

@@ -1,0 +1,315 @@
+---
+import { site } from "../data/site";
+import { portraits } from "../data/media.json";
+---
+
+<aside class="portrait" aria-label="Profile">
+  <div class="portrait-stage">
+    <button class="portrait-stack" type="button" aria-label="Next portrait">
+      {portraits.map((photo, index) => (
+        <span class="portrait-print" data-position={index} data-photo={index} aria-hidden={index !== 0 ? "true" : undefined}>
+          <span class="portrait-window">
+            <img src={photo.src} alt={photo.alt} width="800" height="1000" draggable="false" />
+            {photo.live && <video class="portrait-motion" src={photo.live} muted playsinline preload="none" aria-hidden="true" />}
+          </span>
+        </span>
+      ))}
+    </button>
+    <button class="portrait-live glass-control" type="button" aria-label="Play Live Photo" aria-pressed="false" title="Play Live Photo" hidden={!portraits[0].live}>
+      <svg class="live-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" stroke-dasharray=".7 2.7"/><circle cx="12" cy="12" r="6.6"/><circle cx="12" cy="12" r="3.1"/></svg>
+      <span>LIVE</span>
+    </button>
+    <button class="portrait-expand glass-control" type="button" aria-label="Expand photograph" title="Expand photograph" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" /></svg>
+    </button>
+  </div>
+  <div class="portrait-dots" aria-hidden="true">
+    {portraits.map((_, index) => <span class:list={["portrait-dot", { "is-current": index === 0 }]} />)}
+  </div>
+  <span class="visually-hidden" id="portrait-status" aria-live="polite"></span>
+  <div class="hero__meta">
+    <strong>{site.author.name}</strong>
+    <span>{site.author.role} · {site.author.affiliation}</span>
+    <span>{site.author.location}</span>
+  </div>
+  <dialog class="portrait-viewer" aria-label="Expanded portrait photograph">
+    <div class="portrait-full-frame">
+      <img class="portrait-full-image" alt="" draggable="false" />
+      <video class="portrait-full-motion" muted playsinline preload="none" aria-hidden="true" />
+      <button class="portrait-full-live portrait-live glass-control" type="button" aria-label="Play Live Photo" aria-pressed="false" title="Play Live Photo" hidden>
+        <svg class="live-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" stroke-dasharray=".7 2.7"/><circle cx="12" cy="12" r="6.6"/><circle cx="12" cy="12" r="3.1"/></svg>
+        <span>LIVE</span>
+      </button>
+      <span class="visually-hidden portrait-full-status" aria-live="polite"></span>
+      <button class="portrait-close glass-control" type="button" aria-label="Return to headshot" title="Return to headshot" autofocus>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h5V4m11 5h-5V4M4 15h5v5m11-5h-5v5" /></svg>
+      </button>
+      <span class="portrait-pan-hint" aria-hidden="true">Drag to explore</span>
+      <button class="portrait-fit glass-control" type="button" aria-label="Fit entire photograph" title="Fit entire photograph" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m7 15 3-3 3 3 2-2 2 2M8 8h.01"/></svg>
+      </button>
+    </div>
+  </dialog>
+</aside>
+
+<script>
+  import { portraits } from "../data/media.json";
+  import { portraitGeometry, type Rect } from "../lib/portrait-geometry";
+  const stack = document.querySelector<HTMLButtonElement>(".portrait-stack");
+  if (stack) {
+    const root = stack.closest(".portrait")!;
+    const cards = Array.from(stack.querySelectorAll<HTMLElement>(".portrait-print"));
+    const dots = Array.from(root.querySelectorAll(".portrait-dot"));
+    const status = root.querySelector("#portrait-status")!;
+    const expand = root.querySelector<HTMLButtonElement>(".portrait-expand")!;
+    const liveButton = root.querySelector<HTMLButtonElement>(".portrait-live")!;
+    const dialog = root.querySelector<HTMLDialogElement>(".portrait-viewer")!;
+    const frame = dialog.querySelector<HTMLElement>(".portrait-full-frame")!;
+    const fullImage = dialog.querySelector<HTMLImageElement>(".portrait-full-image")!;
+    const fullVideo = dialog.querySelector<HTMLVideoElement>(".portrait-full-motion")!;
+    const fullLiveButton = dialog.querySelector<HTMLButtonElement>(".portrait-full-live")!;
+    const liveButtons = [liveButton, fullLiveButton];
+    const fullMedia = [fullImage, fullVideo];
+    const fitButton = dialog.querySelector<HTMLButtonElement>(".portrait-fit")!;
+    let busy = false, transitioning = false, suppressClick = false, fitted = false;
+    let source: Rect;
+    let video: HTMLVideoElement | null = null;
+    let liveRequest = 0;
+    let view: ReturnType<typeof portraitGeometry>;
+    const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const selected = () => Number(cards[0].dataset.photo);
+    const pixels = (rect: Rect) => Object.fromEntries(Object.entries(rect).map(([key, value]) => [key, `${value}px`]));
+    const placeMedia = (rect: Rect) => fullMedia.forEach(media => Object.assign(media.style, pixels(rect)));
+    const currentSource = () => {
+      const { left, top, width, height } = cards[0].querySelector(".portrait-window")!.getBoundingClientRect();
+      return { left, top, width, height };
+    };
+    function stopLive() {
+      liveRequest++;
+      video?.pause(); video?.classList.remove("is-playing");
+      for (const button of liveButtons) {
+        button.classList.remove("is-playing");
+        button.setAttribute("aria-pressed", "false");
+        button.setAttribute("aria-label", "Play Live Photo");
+        button.title = "Play Live Photo";
+      }
+    }
+    async function playLive(startTime = 0, toggle = true) {
+      if (busy || transitioning || !portraits[selected()].live) return;
+      if (toggle && video && !video.paused) { stopLive(); return; }
+      stopLive();
+      const clip = dialog.open ? fullVideo : cards[0].querySelector("video");
+      if (!clip) return;
+      const button = dialog.open ? fullLiveButton : liveButton;
+      video = clip;
+      const request = ++liveRequest;
+      try {
+        clip.currentTime = startTime; await clip.play();
+        if (request !== liveRequest) { clip.pause(); return; }
+        clip.classList.add("is-playing"); button.classList.add("is-playing");
+        button.setAttribute("aria-pressed", "true");
+        button.setAttribute("aria-label", "Stop Live Photo");
+        button.title = "Stop Live Photo";
+      } catch {
+        if (request !== liveRequest) return;
+        (dialog.open ? dialog.querySelector(".portrait-full-status")! : status).textContent = "Live Photo could not play. Please try again.";
+        stopLive();
+      }
+    }
+    root.querySelectorAll("video").forEach(v => v.addEventListener("ended", stopLive));
+    liveButton.addEventListener("click", () => { void playLive(); });
+    fullLiveButton.addEventListener("click", () => { void playLive(); });
+    document.addEventListener("visibilitychange", () => { if (document.hidden) stopLive(); });
+
+    async function cycle(direction = 1) {
+      if (busy || transitioning || dialog.open || cards.length < 2) return;
+      stopLive(); busy = true; stack!.setAttribute("aria-busy", "true");
+      root.classList.add("is-switching");
+      const outgoing = cards[0];
+      let animation: Animation | undefined;
+      try {
+        if (!reduced()) {
+          const room = Math.max(12, Math.min(65, innerWidth - stack!.getBoundingClientRect().right - 22));
+          animation = outgoing.animate([{ transform: "none", opacity: 1 }, { transform: `translate(${room}px, -16px) rotate(7deg)`, opacity: 0 }],
+            { duration: 300, easing: "cubic-bezier(.4, 0, .2, 1)", fill: "forwards" });
+          await animation.finished;
+        }
+        if (direction > 0) cards.push(cards.shift()!); else cards.unshift(cards.pop()!);
+        cards.forEach((card, index) => { card.dataset.position = String(index); card.setAttribute("aria-hidden", String(index !== 0)); });
+        animation?.cancel();
+        dots.forEach((dot, index) => dot.classList.toggle("is-current", index === selected()));
+        liveButton.hidden = !portraits[selected()].live;
+        status.textContent = `Portrait ${selected() + 1} of ${cards.length}`;
+        if (!reduced()) await outgoing.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240 }).finished;
+      } finally { busy = false; stack!.removeAttribute("aria-busy"); root.classList.remove("is-switching"); }
+    }
+    stack.addEventListener("click", () => { if (suppressClick) { suppressClick = false; return; } void cycle(); });
+    stack.addEventListener("keydown", event => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); void cycle(event.key === "ArrowLeft" ? -1 : 1); }
+    });
+    let touchStart: { x: number; y: number } | undefined;
+    let holdTimer: ReturnType<typeof setTimeout> | undefined;
+    let held = false;
+    const cancelHold = () => { clearTimeout(holdTimer); holdTimer = undefined; };
+    stack.addEventListener("pointerdown", event => {
+      if (event.button !== 0) return;
+      suppressClick = false; held = false; touchStart = { x: event.clientX, y: event.clientY };
+      if (portraits[selected()].live) holdTimer = setTimeout(() => { held = true; suppressClick = true; void playLive(); }, 420);
+    });
+    stack.addEventListener("pointermove", event => {
+      if (touchStart && Math.hypot(event.clientX - touchStart.x, event.clientY - touchStart.y) > 12) cancelHold();
+    });
+    stack.addEventListener("pointerup", event => {
+      cancelHold(); if (held) { stopLive(); touchStart = undefined; return; }
+      if (!touchStart) return;
+      const dx = event.clientX - touchStart.x, dy = event.clientY - touchStart.y;
+      touchStart = undefined;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) { suppressClick = true; void cycle(dx < 0 ? 1 : -1); }
+    });
+    stack.addEventListener("pointercancel", () => { cancelHold(); stopLive(); touchStart = undefined; });
+    stack.addEventListener("pointerleave", () => { cancelHold(); if (held) stopLive(); });
+    stack.addEventListener("contextmenu", event => { if (portraits[selected()].live) event.preventDefault(); });
+
+    function updateView() {
+      view = portraitGeometry(source, portraits[selected()], { width: innerWidth, height: innerHeight }, fitted);
+      frame.classList.toggle("is-pannable", view.pannable);
+      fitButton.hidden = !fitted && !view.pannable;
+      fitButton.setAttribute("aria-pressed", String(fitted));
+      fitButton.setAttribute("aria-label", fitted ? "Return to original scale" : "Fit entire photograph");
+      fitButton.title = fitted ? "Return to original scale" : "Fit entire photograph";
+    }
+    async function animateGeometry(fromFrame: Rect, toFrame: Rect, fromImage: Rect, toImage: Rect) {
+      Object.assign(frame.style, pixels(toFrame)); placeMedia(toImage);
+      if (reduced()) return;
+      const settings = { duration: 580, easing: "cubic-bezier(.22, 1, .36, 1)" };
+      await Promise.all([frame.animate([pixels(fromFrame), pixels(toFrame)], settings).finished,
+        ...fullMedia.map(media => media.animate([pixels(fromImage), pixels(toImage)], settings).finished)]);
+    }
+    expand.addEventListener("click", async () => {
+      if (busy || transitioning) return;
+      const resumeTime = video && !video.paused ? video.currentTime : null;
+      transitioning = true; stopLive(); expand.setAttribute("aria-busy", "true");
+      try {
+        const photo = portraits[selected()]; fullImage.src = photo.full; fullImage.alt = photo.alt;
+        fullLiveButton.hidden = !photo.liveFull;
+        if (photo.liveFull && fullVideo.getAttribute("src") !== photo.liveFull) fullVideo.src = photo.liveFull;
+        await fullImage.decode();
+        source = currentSource(); fitted = false; updateView();
+        Object.assign(frame.style, pixels(view.smallFrame)); placeMedia(view.smallImage);
+        dialog.showModal(); document.documentElement.classList.add("portrait-viewer-open");
+        dialog.classList.add("is-transitioning");
+        await animateGeometry(view.smallFrame, view.frame, view.smallImage, view.image);
+      } catch { status.textContent = "The photograph could not load. Please try again."; dialog.close(); document.documentElement.classList.remove("portrait-viewer-open"); }
+      finally { transitioning = false; dialog.classList.remove("is-transitioning"); expand.removeAttribute("aria-busy"); }
+      if (resumeTime !== null && dialog.open) void playLive(resumeTime, false);
+    });
+    async function close() {
+      if (!dialog.open || transitioning) return;
+      const resumeTime = video && !video.paused ? video.currentTime : null;
+      stopLive();
+      transitioning = true; dialog.classList.add("is-closing", "is-transitioning");
+      try { await animateGeometry(view.frame, view.smallFrame, view.image, view.smallImage); dialog.close(); }
+      finally { dialog.classList.remove("is-closing", "is-transitioning"); document.documentElement.classList.remove("portrait-viewer-open"); transitioning = false; expand.focus({ preventScroll: true }); }
+      if (resumeTime !== null) void playLive(resumeTime, false);
+    }
+    dialog.querySelector(".portrait-close")!.addEventListener("click", () => { void close(); });
+    dialog.addEventListener("cancel", event => { event.preventDefault(); void close(); });
+    dialog.addEventListener("click", event => { if (event.target === dialog) void close(); });
+    fitButton.addEventListener("click", async () => {
+      if (transitioning) return;
+      transitioning = true; const previous = view; fitted = !fitted; updateView();
+      try { await animateGeometry(previous.frame, view.frame, previous.image, view.image); }
+      finally { transitioning = false; }
+    });
+    let drag: { x: number; y: number; left: number; top: number } | undefined;
+    function pan(x: number, y: number) {
+      view.image.left = Math.max(view.frame.width - view.image.width, Math.min(0, x));
+      view.image.top = Math.max(view.frame.height - view.image.height, Math.min(0, y));
+      placeMedia(view.image);
+    }
+    let fullHoldTimer: ReturnType<typeof setTimeout> | undefined;
+    let fullHeld = false;
+    const cancelFullHold = () => { clearTimeout(fullHoldTimer); fullHoldTimer = undefined; };
+    frame.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || transitioning || (event.target as Element).closest("button")) return;
+      drag = { x: event.clientX, y: event.clientY, left: view.image.left, top: view.image.top };
+      frame.setPointerCapture(event.pointerId);
+      fullHeld = false;
+      if (portraits[selected()].liveFull) fullHoldTimer = setTimeout(() => { fullHeld = true; void playLive(); }, 420);
+    });
+    frame.addEventListener("pointermove", event => {
+      if (!drag) return;
+      const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+      if (Math.hypot(dx, dy) > 12) {
+        cancelFullHold();
+        if (fullHeld) { stopLive(); fullHeld = false; }
+        if (view.pannable) { frame.classList.add("is-dragging"); pan(drag.left + dx, drag.top + dy); }
+      }
+    });
+    for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) frame.addEventListener(name, () => {
+      cancelFullHold(); if (fullHeld) stopLive(); fullHeld = false;
+      drag = undefined; frame.classList.remove("is-dragging");
+    });
+    frame.addEventListener("contextmenu", event => { if (portraits[selected()].liveFull) event.preventDefault(); });
+    dialog.addEventListener("keydown", event => {
+      if (transitioning || !view.pannable || !event.key.startsWith("Arrow")) return;
+      event.preventDefault(); pan(view.image.left + (event.key === "ArrowLeft" ? 60 : event.key === "ArrowRight" ? -60 : 0), view.image.top + (event.key === "ArrowUp" ? 60 : event.key === "ArrowDown" ? -60 : 0));
+    });
+    window.addEventListener("resize", () => {
+      if (dialog.open && !transitioning) { source = currentSource(); updateView(); Object.assign(frame.style, pixels(view.frame)); placeMedia(view.image); }
+    });
+  }
+</script>
+
+<style>
+  .portrait { width: 100%; max-width: 310px; justify-self: center; padding: 12px 10px 0; }
+  .portrait-stage { position: relative; }
+  .portrait-stack { position: relative; display: block; width: 100%; border: 0; background: transparent; padding: 0; cursor: pointer; isolation: isolate; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+  .portrait-stack::before { content: ''; display: block; padding-top: calc(125% - 5px); }
+  .portrait-print { position: absolute; inset: 0; padding: 9px; background: #fffdfa; border: 1px solid #e9e1d9; border-radius: 5px; box-shadow: 0 2px 5px rgb(55 38 24 / 5%), 0 16px 32px -15px rgb(55 38 24 / 28%); transform-origin: 50% 85%; transition: transform 500ms cubic-bezier(.22, 1, .36, 1); }
+  .portrait-print[data-position="0"] { z-index: 4; transform: none; }
+  .portrait-print[data-position="1"] { z-index: 3; transform: translate(9px, 1px) rotate(3deg) scale(.97); }
+  .portrait-print[data-position="2"] { z-index: 2; transform: translate(-8px, 1px) rotate(-3deg) scale(.95); }
+  .portrait-print:not([data-position="0"]):not([data-position="1"]):not([data-position="2"]) { z-index: 1; transform: translateY(7px) scale(.95); }
+  .portrait-window { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 2px; }
+  .portrait-window img, .portrait-motion { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; }
+  .portrait-motion { position: absolute; inset: 0; }
+  .portrait-motion, .portrait-full-motion { opacity: 0; transition: opacity 240ms; pointer-events: none; }
+  .portrait-motion.is-playing, .portrait-full-motion.is-playing { opacity: 1; }
+  .portrait-stack:focus-visible { outline: 2px solid var(--accent); outline-offset: 12px; border-radius: 5px; }
+  .glass-control { display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 38px; height: 38px; padding: 0; color: white; background: rgb(35 39 34 / 24%); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); border: 1px solid rgb(255 255 255 / 38%); border-radius: 50%; box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%), 0 2px 8px rgb(0 0 0 / 8%); cursor: pointer; transition: background 180ms, opacity 180ms, transform 180ms; -webkit-tap-highlight-color: transparent; }
+  .glass-control::after { content: ''; position: absolute; inset: -4px; }
+  .glass-control:hover { background: rgb(35 39 34 / 46%); }
+  .glass-control:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .glass-control svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .glass-control[hidden] { display: none; }
+  .portrait-expand { position: absolute; right: 19px; bottom: 19px; z-index: 6; }
+  .portrait-live { position: absolute; bottom: 19px; left: 19px; z-index: 6; width: auto; height: 32px; padding: 0 10px 0 7px; border-radius: 99px; font: 600 9px/1 system-ui; letter-spacing: 1px; }
+  .portrait-live.is-playing { color: #ffe593; background: rgb(30 33 27 / 48%); }
+  .portrait-live.is-playing .live-glyph { animation: live-pulse 1.4s ease-in-out infinite; }
+  .is-switching .portrait-stage > .glass-control { opacity: 0; pointer-events: none; }
+  .portrait-dots { display: flex; justify-content: center; gap: 5px; margin: 20px 0 12px; }
+  .portrait-dot { width: 4px; height: 4px; border-radius: 99px; background: #cfdae4; transition: width 250ms, background 250ms; }
+  .portrait-dot.is-current { width: 13px; background: var(--accent); }
+  .hero__meta { margin-top: 0; }
+  :global(html.portrait-viewer-open) { overflow: hidden; }
+  .portrait-viewer { position: fixed; inset: 0; padding: 0; margin: 0; border: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; background: transparent; overflow: hidden; }
+  .portrait-viewer::backdrop { background: rgb(232 241 248 / 45%); backdrop-filter: blur(18px) saturate(.85); -webkit-backdrop-filter: blur(18px) saturate(.85); animation: frost-in 580ms both; }
+  .portrait-viewer.is-closing::backdrop { animation: frost-out 580ms both; }
+  .portrait-full-frame { position: absolute; overflow: clip; border-radius: 3px; outline: 9px solid #fffdfa; background: #fffdfa; box-shadow: 0 0 0 10px rgb(255 255 255 / 55%), 0 26px 80px -15px rgb(61 49 42 / 28%); touch-action: none; }
+  .portrait-full-image, .portrait-full-motion { position: absolute; max-width: none; display: block; user-select: none; -webkit-touch-callout: none; }
+  .portrait-full-live { bottom: 12px; left: 12px; }
+  .portrait-close { position: absolute; top: 12px; right: 12px; z-index: 2; }
+  .portrait-fit { position: absolute; bottom: 12px; right: 12px; z-index: 2; }
+  .portrait-pan-hint { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 5px 10px; border-radius: 99px; background: rgb(35 39 34 / 27%); backdrop-filter: blur(10px); color: white; font: 400 10px/1.4 system-ui; letter-spacing: .2px; pointer-events: none; opacity: 0; transition: opacity 200ms; }
+  .is-pannable { cursor: grab; }
+  .is-pannable .portrait-pan-hint { opacity: 1; }
+  .is-dragging { cursor: grabbing; }
+  .is-dragging .portrait-pan-hint, .is-transitioning .glass-control, .is-transitioning .portrait-pan-hint { opacity: 0; }
+  @keyframes frost-in { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(18px); } }
+  @keyframes frost-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes live-pulse { 50% { transform: scale(1.12); opacity: .75; } }
+  @media (hover: hover) { .portrait-expand { opacity: .6; } .portrait-stage:hover .portrait-expand, .portrait-expand:focus-visible { opacity: 1; } }
+  @media (max-width: 860px) { .portrait { order: -1; margin-bottom: 1rem; } }
+  @media (prefers-reduced-motion: reduce) { *, *::backdrop { transition: none !important; animation: none !important; } }
+</style>

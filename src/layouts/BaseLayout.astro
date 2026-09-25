@@ -1,0 +1,74 @@
+---
+import "../styles/global.css";
+import { site } from "../data/site";
+
+type Props = {
+  title?: string;
+  description?: string;
+};
+
+const pageTitle = Astro.props.title ? `${Astro.props.title} | ${site.title}` : site.title;
+const description = Astro.props.description ?? site.description;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={new URL(currentPath, site.url).toString()} />
+    <meta property="og:image" content={new URL(site.author.avatar, site.url).toString()} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/png" href="/images/robot.png" />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="/">
+          <span class="brand__name">{site.title}</span>
+          <span class="brand__role">{site.author.role}</span>
+        </a>
+        <div class="nav__links">
+          {
+            site.nav.map((item) => (
+              <a
+                href={item.href}
+                class:list={[
+                  "nav__link",
+                  currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href))
+                    ? "is-active"
+                    : "",
+                ]}
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </div>
+      </nav>
+    </header>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-grid">
+        <div>
+          <strong>{site.author.name}</strong>
+          <p>{site.author.bio}</p>
+        </div>
+        <div class="footer-links" aria-label="Social links">
+          {site.socials.map((social) => <a href={social.href}>{social.label}</a>)}
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

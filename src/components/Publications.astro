@@ -1,0 +1,82 @@
+---
+import PublicationCard from "./PublicationCard.astro";
+import { publications } from "../data/publications";
+
+const selected = publications.filter((publication) => publication.selected);
+---
+
+<section class="section shell" id="publications">
+  <div class="publication-heading">
+    <div class="section-heading">
+      <p class="eyebrow">Publications</p>
+      <h2 id="publication-heading">Selected publications.</h2>
+    </div>
+    <div class="publication-tabs" role="tablist" aria-label="Publication selection">
+      <button class="publication-tab" id="tab-selected" type="button" role="tab" aria-selected="true" aria-controls="panel-selected" tabindex="0">
+        Selected Publications
+      </button>
+      <button class="publication-tab" id="tab-all" type="button" role="tab" aria-selected="false" aria-controls="panel-all" tabindex="-1">
+        All Publications
+      </button>
+    </div>
+  </div>
+  <div id="panel-selected" class="publication-panel" role="tabpanel" aria-labelledby="tab-selected" tabindex="0">
+    <div class="publication-list">
+      {selected.map((publication) => <PublicationCard publication={publication} />)}
+    </div>
+  </div>
+  <div id="panel-all" class="publication-panel" role="tabpanel" aria-labelledby="tab-all" tabindex="0" hidden>
+    <div class="publication-list">
+      {publications.map((publication) => <PublicationCard publication={publication} />)}
+    </div>
+  </div>
+  <p class="muted" style="margin-top: 1rem;">
+    More publications can be found on{" "}
+    <a href="https://scholar.google.com/citations?user=vDzY-hQAAAAJ"><strong>Google Scholar</strong></a>.
+  </p>
+  <noscript>
+    <style>
+      .publication-tabs, #panel-selected { display: none; }
+      #panel-all[hidden] { display: block; }
+    </style>
+    <p class="muted">All publications are shown when JavaScript is disabled.</p>
+  </noscript>
+</section>
+
+<script>
+  const section = document.querySelector<HTMLElement>("#publications");
+  if (section) {
+    const tabs = Array.from(section.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const panels = Array.from(section.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+    const heading = section.querySelector<HTMLElement>("#publication-heading");
+
+    function activate(tab: HTMLButtonElement) {
+      for (const item of tabs) {
+        const active = item === tab;
+        item.setAttribute("aria-selected", String(active));
+        item.tabIndex = active ? 0 : -1;
+      }
+      for (const panel of panels) {
+        panel.hidden = panel.id !== tab.getAttribute("aria-controls");
+      }
+      if (heading) heading.textContent = tab.id === "tab-selected" ? "Selected publications." : "All publications.";
+    }
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => activate(tab));
+      tab.addEventListener("keydown", (event) => {
+        let next: number;
+        switch (event.key) {
+          case "ArrowRight": next = (index + 1) % tabs.length; break;
+          case "ArrowLeft": next = (index - 1 + tabs.length) % tabs.length; break;
+          case "Home": next = 0; break;
+          case "End": next = tabs.length - 1; break;
+          default: return;
+        }
+        event.preventDefault();
+        activate(tabs[next]);
+        tabs[next].focus();
+      });
+    });
+  }
+</script>

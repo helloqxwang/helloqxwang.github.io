@@ -1,0 +1,277 @@
+---
+import { photos } from "../data/media.json";
+---
+
+<section class="section shell photography" id="photography" aria-labelledby="photography-label">
+  <div class="section-heading">
+    <p class="eyebrow" id="photography-label">Photography</p>
+  </div>
+  <div class="photo-wall">
+    {photos.map((photo, index) => (
+      <figure class:list={["photo-tile", { "photo-tile--wide": photo.width >= photo.height, "photo-tile--tall": photo.priority === 1 && photo.width < photo.height }]}>
+        <a class="photo-open" href={photo.full} data-photo-index={index} aria-label={`Enlarge photograph: ${photo.alt}`}>
+          <img src={photo.src} width={photo.width} height={photo.height} alt={photo.alt} loading="lazy" decoding="async" />
+          <span class="photo-expand" aria-hidden="true">↗</span>
+        </a>
+      </figure>
+    ))}
+  </div>
+  <dialog class="photo-viewer" aria-label="Photograph viewer">
+    <figure class="photo-viewer__figure">
+      <div class="photo-viewer__toolbar">
+        <span class="photo-viewer__position" aria-live="polite"></span>
+        <button type="button" class="photo-viewer__close" aria-label="Close photograph" autofocus>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <button type="button" class="photo-viewer__prev" aria-label="Previous photograph">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+      </button>
+      <button type="button" class="photo-viewer__next" aria-label="Next photograph">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+      </button>
+      <img class="photo-viewer__image" alt="" />
+      <figcaption class="photo-viewer__caption">
+        <p class="photo-caption__custom"></p>
+        <div class="photo-caption__equipment">
+          <span class="photo-caption__camera-line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h4l2-2h4l2 2h4v14H4Z"/><circle cx="12" cy="12" r="4"/></svg><span class="photo-caption__camera"></span></span>
+          <span class="photo-caption__lens"></span>
+        </div>
+        <dl class="photo-caption__settings"></dl>
+      </figcaption>
+    </figure>
+  </dialog>
+</section>
+
+<script>
+  import { photos } from "../data/media.json";
+  import { layoutPhotos } from "../lib/photo-layout";
+  import { anchoredPhotoFrame, type PhotoRect } from "../lib/photo-viewer-geometry";
+  const gallery = document.querySelector<HTMLElement>(".photography");
+  if (gallery) {
+    const wall = gallery.querySelector<HTMLElement>(".photo-wall")!;
+    const tiles = Array.from(wall.querySelectorAll<HTMLElement>(".photo-tile"));
+    let lastWidth = 0;
+    const arrange = () => {
+      const width = wall.clientWidth;
+      if (!width || width === lastWidth) return;
+      lastWidth = width;
+      const layout = layoutPhotos(width, photos);
+      wall.dataset.layout = "ready";
+      wall.style.height = `${layout.height}px`;
+      tiles.forEach((tile, index) => {
+        const rect = layout.items[index];
+        Object.assign(tile.style, { left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px` });
+      });
+    };
+    let layoutFrame = 0;
+    new ResizeObserver(() => {
+      cancelAnimationFrame(layoutFrame);
+      layoutFrame = requestAnimationFrame(arrange);
+    }).observe(wall);
+    arrange();
+    const links = Array.from(gallery.querySelectorAll<HTMLAnchorElement>(".photo-open"));
+    const dialog = gallery.querySelector<HTMLDialogElement>(".photo-viewer")!;
+    const image = dialog.querySelector<HTMLImageElement>(".photo-viewer__image")!;
+    const caption = dialog.querySelector<HTMLElement>(".photo-viewer__caption")!;
+    const position = dialog.querySelector<HTMLElement>(".photo-viewer__position")!;
+    const figure = dialog.querySelector<HTMLElement>(".photo-viewer__figure")!;
+    const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let current = 0, busy = false;
+    let opener: HTMLAnchorElement | undefined;
+    let anchor: PhotoRect;
+    let target: ReturnType<typeof anchoredPhotoFrame>;
+    const pixels = (rect: Record<string, number>) => Object.fromEntries(Object.entries(rect).map(([key, value]) => [key, `${value}px`]));
+    const thumbnailRect = (link: HTMLAnchorElement): PhotoRect => {
+      const {left, top, width, height} = link.getBoundingClientRect();
+      return {left, top, width, height};
+    };
+    function render(index: number) {
+      current = (index + links.length) % links.length;
+      const photo = photos[current];
+      image.src = photo.full;
+      image.alt = photo.alt;
+      const custom = caption.querySelector<HTMLElement>(".photo-caption__custom")!;
+      const equipment = caption.querySelector<HTMLElement>(".photo-caption__equipment")!;
+      const settings = caption.querySelector<HTMLElement>(".photo-caption__settings")!;
+      caption.hidden = photo.caption === "none";
+      const useExif = photo.caption === "exif";
+      custom.hidden = useExif;
+      custom.textContent = useExif ? "" : photo.caption;
+      equipment.hidden = !useExif;
+      settings.hidden = !useExif;
+      caption.querySelector(".photo-caption__camera")!.textContent = photo.metadata.camera || "Camera not recorded";
+      const lens = caption.querySelector<HTMLElement>(".photo-caption__lens")!;
+      lens.textContent = photo.metadata.lens;
+      lens.hidden = !photo.metadata.lens;
+      settings.replaceChildren();
+      for (const [label, value] of [["Focal length", photo.metadata.focal_length], ["Aperture", photo.metadata.aperture], ["Shutter speed", photo.metadata.shutter], ["Sensitivity", photo.metadata.iso]]) {
+        if (!value) continue;
+        const group = document.createElement("div");
+        const term = document.createElement("dt"); term.textContent = label;
+        const detail = document.createElement("dd"); detail.textContent = value;
+        group.append(term, detail); settings.append(group);
+      }
+      position.textContent = `${String(current + 1).padStart(2, "0")} / ${String(links.length).padStart(2, "0")}`;
+    }
+    function fit() {
+      const photo = photos[current], ratio = photo.width / photo.height;
+      // Measure the footer at the actual image width before placing the card.
+      let captionHeight = caption.hidden ? 0 : caption.getBoundingClientRect().height;
+      for (let i = 0; i < 8; i++) {
+        target = anchoredPhotoFrame(anchor, ratio, captionHeight, {width: innerWidth, height: innerHeight});
+        Object.assign(figure.style, pixels(target.frame));
+        Object.assign(image.style, pixels(target.image));
+        const measured = caption.hidden ? 0 : caption.getBoundingClientRect().height;
+        if (Math.abs(measured - captionHeight) < .25) break;
+        captionHeight = measured;
+      }
+    }
+    async function animateFromThumbnail(opening: boolean) {
+      if (reduced()) return;
+      const origin = thumbnailRect(opening ? opener! : links[current]);
+      const smallFrame = {left: origin.left - 8, top: origin.top - 8, width: origin.width + 16, height: origin.height + 16};
+      const smallImage = {width: origin.width, height: origin.height};
+      const options = { duration: 580, easing: "cubic-bezier(.22, 1, .36, 1)", fill: "both" as FillMode };
+      // Animate the four edges directly. There is no preliminary move to a
+      // centered stage, no image fade, and the reverse lands on the same tile.
+      const frames = [pixels(smallFrame), pixels(target.frame)];
+      const images = [pixels(smallImage), pixels(target.image)];
+      const animations = [
+        figure.animate(opening ? frames : frames.toReversed(), options),
+        image.animate(opening ? images : images.toReversed(), options),
+        caption.animate(opening ? [{opacity:0,offset:0},{opacity:0,offset:.55},{opacity:1,offset:1}] : [{opacity:1},{opacity:0,offset:.3},{opacity:0}], options),
+      ];
+      try { await Promise.all(animations.map(animation => animation.finished)); }
+      finally { animations.forEach(animation => animation.cancel()); }
+    }
+    async function open(index: number, link: HTMLAnchorElement) {
+      if (busy) return;
+      busy = true; opener = link; link.setAttribute("aria-busy", "true");
+      dialog.setAttribute("aria-busy", "true");
+      try {
+        const preload = new Image(); preload.src = photos[index].full; await preload.decode();
+        anchor = thumbnailRect(link);
+        render(index); dialog.classList.add("is-transitioning");
+        Object.assign(figure.style, pixels({left: anchor.left - 8, top: anchor.top - 8, width: anchor.width + 16, height: anchor.height + 16}));
+        link.classList.add("is-viewing");
+        document.documentElement.classList.add("photo-viewer-open");
+        dialog.showModal(); fit();
+        await animateFromThumbnail(true);
+      } catch { link.classList.remove("is-viewing"); dialog.close(); document.documentElement.classList.remove("photo-viewer-open"); window.location.assign(link.href); }
+      finally { busy = false; link.removeAttribute("aria-busy"); dialog.removeAttribute("aria-busy"); dialog.classList.remove("is-transitioning"); }
+    }
+    async function close() {
+      if (busy || !dialog.open) return;
+      busy = true; dialog.classList.add("is-closing", "is-transitioning");
+      try { await animateFromThumbnail(false); dialog.close(); }
+      finally { busy = false; figure.getAnimations().forEach(animation => animation.cancel()); dialog.classList.remove("is-closing", "is-transitioning"); }
+    }
+    async function change(direction: number) {
+      if (busy) return;
+      busy = true;
+      dialog.setAttribute("aria-busy", "true");
+      try {
+        const next = (current + direction + photos.length) % photos.length;
+        const preload = new Image(); preload.src = photos[next].full; await preload.decode();
+        const currentImage = image.getBoundingClientRect();
+        if (!reduced()) await figure.animate([{opacity:1,transform:'none'}, {opacity:0,transform:`translateX(${-direction * 14}px)`}], {duration:130,fill:'forwards'}).finished;
+        // Keep the current image center when using the viewer's next/previous
+        // controls; opening a wall tile itself always uses that tile's anchor.
+        anchor = {left:currentImage.left, top:currentImage.top, width:currentImage.width, height:currentImage.height};
+        links[current].classList.remove("is-viewing"); links[next].classList.add("is-viewing");
+        render(next); fit();
+        figure.getAnimations().forEach(animation => animation.cancel());
+        if (!reduced()) await figure.animate([{opacity:0,transform:`translateX(${direction * 14}px)`}, {opacity:1,transform:'none'}], {duration:260,easing:'ease-out'}).finished;
+      } catch { position.textContent = "Unable to load photo. Try again."; }
+      finally { busy = false; dialog.removeAttribute("aria-busy"); }
+    }
+    links.forEach((link, index) => link.addEventListener("click", event => { event.preventDefault(); void open(index, link); }));
+    dialog.querySelector(".photo-viewer__close")!.addEventListener("click", () => { void close(); });
+    dialog.querySelector(".photo-viewer__prev")!.addEventListener("click", () => { void change(-1); });
+    dialog.querySelector(".photo-viewer__next")!.addEventListener("click", () => { void change(1); });
+    dialog.addEventListener("click", event => { if (event.target === dialog) void close(); });
+    dialog.addEventListener("cancel", event => { event.preventDefault(); void close(); });
+    dialog.addEventListener("keydown", event => {
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") { event.preventDefault(); void change(event.key === "ArrowRight" ? 1 : -1); }
+    });
+    let touch: {x:number;y:number} | undefined;
+    image.addEventListener("pointerdown", event => { if (event.pointerType === "touch") touch = {x:event.clientX,y:event.clientY}; });
+    image.addEventListener("pointerup", event => {
+      if (!touch) return;
+      const dx = event.clientX - touch.x, dy = event.clientY - touch.y; touch = undefined;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) void change(dx < 0 ? 1 : -1);
+    });
+    image.addEventListener("pointercancel", () => { touch = undefined; });
+    window.addEventListener("resize", () => { if (dialog.open && !busy) { anchor = thumbnailRect(links[current]); fit(); } });
+    dialog.addEventListener("close", () => {
+      links.forEach(link => link.classList.remove("is-viewing"));
+      document.documentElement.classList.remove("photo-viewer-open"); opener?.focus({ preventScroll: true });
+    });
+  }
+</script>
+
+<style>
+  .photo-wall { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; align-items: start; }
+  .photo-tile { grid-column: span 2; }
+  .photo-tile--wide { grid-column: span 4; }
+  .photo-tile--tall { grid-column: span 3; }
+  .photo-wall[data-layout="ready"] { display: block; }
+  .photo-wall[data-layout="ready"] .photo-tile { position: absolute; }
+  .photo-tile { margin: 0; padding: 7px; background: #fffdfa; border: 1px solid #ece2dd; border-radius: 7px; box-shadow: 0 5px 15px -10px rgb(55 38 24 / 18%); break-inside: avoid; }
+  .photo-open { position: relative; display: block; overflow: hidden; border-radius: 3px; }
+  .photo-open img { width: 100%; height: auto; transition: transform 600ms cubic-bezier(.22, 1, .36, 1); }
+  .photo-open:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .photo-expand { position: absolute; bottom: 10px; right: 10px; display: grid; place-items: center; width: 30px; height: 30px; background: rgb(255 253 250 / 92%); color: #443625; border-radius: 50%; opacity: 0; transform: translateY(4px); transition: opacity 200ms, transform 200ms; }
+  .photo-open.is-viewing img, .photo-open.is-viewing .photo-expand { visibility: hidden; }
+  .photo-open:hover .photo-expand, .photo-open:focus-visible .photo-expand { opacity: 1; transform: none; }
+  :global(html.photo-viewer-open) { overflow: hidden; }
+  .photo-viewer { position: fixed; inset: 0; border: 0; margin: 0; padding: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; background: transparent; color: var(--ink); overflow: clip; }
+  .photo-viewer::backdrop { background: rgb(232 241 248 / 45%); backdrop-filter: blur(18px) saturate(.85); -webkit-backdrop-filter: blur(18px) saturate(.85); animation: photo-frost-in 580ms both; }
+  .photo-viewer.is-closing::backdrop { animation: photo-frost-out 580ms both; }
+  .photo-viewer[open] { display: block; }
+  .photo-viewer__figure { position: absolute; margin: 0; padding: 8px; width: min(1100px, 80vw); border-radius: 10px; background: linear-gradient(145deg, rgb(255 253 250 / 86%), rgb(255 253 250 / 57%)); box-shadow: 0 0 0 1px rgb(255 255 255 / 75%), inset 0 1px 0 white, 0 28px 75px -20px rgb(61 49 42 / 28%); backdrop-filter: blur(22px) saturate(1.2); -webkit-backdrop-filter: blur(22px) saturate(1.2); transform-origin: 8px 8px; }
+  .photo-viewer__image { display: block; max-width: none; object-fit: contain; border-radius: 4px; user-select: none; touch-action: pan-y; }
+  .photo-viewer__toolbar { position: absolute; z-index: 2; inset: 20px 20px auto; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+  .photo-viewer__position { padding: 7px 10px; border: 1px solid rgb(255 255 255 / 30%); border-radius: 99px; background: rgb(35 39 34 / 24%); backdrop-filter: blur(14px); color: #fffdfa; font: 500 10px/1.2 system-ui; letter-spacing: .1em; font-variant-numeric: tabular-nums; }
+  .photo-viewer button { display: grid; place-items: center; border: 1px solid rgb(255 255 255 / 55%); border-radius: 50%; background: rgb(255 253 250 / 58%); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); color: #554a40; box-shadow: inset 0 1px 0 rgb(255 255 255 / 50%), 0 3px 12px rgb(61 49 42 / 8%); width: 40px; height: 40px; cursor: pointer; pointer-events: auto; transition: background 180ms, opacity 220ms; }
+  .photo-viewer button::after { content: ''; position: absolute; inset: -3px; }
+  .photo-viewer button:hover { background: rgb(255 253 250 / 90%); }
+  .photo-viewer button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .photo-viewer button svg, .photo-caption__camera-line svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .photo-viewer .photo-viewer__close { position: relative; width: 34px; height: 34px; color: white; background: rgb(35 39 34 / 24%); }
+  .photo-viewer__prev { position: absolute; left: -56px; top: calc(50% - 20px); }
+  .photo-viewer__next { position: absolute; right: -56px; top: calc(50% - 20px); }
+  .photo-viewer__caption { text-align: center; padding: 18px 12px 13px; color: #514d47; font-size: .8rem; transition: opacity 250ms; }
+  .photo-caption__custom { margin: 0; line-height: 1.6; }
+  .photo-caption__equipment { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .photo-caption__camera-line { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+  .photo-caption__camera-line svg { width: 15px; height: 15px; color: #85725b; }
+  .photo-caption__camera { font-size: .78rem; font-weight: 650; letter-spacing: .025em; }
+  .photo-caption__lens { color: #797169; font-size: .68rem; line-height: 1.5; overflow-wrap: anywhere; }
+  .photo-caption__settings { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; margin: 12px 0 0; font-variant-numeric: tabular-nums; }
+  .photo-caption__settings:empty { display: none; }
+  .photo-caption__settings :global(div) { display: grid; gap: 3px; }
+  .photo-caption__settings :global(dt) { color: #8a8177; font-size: .5rem; letter-spacing: .08em; text-transform: uppercase; }
+  .photo-caption__settings :global(dd) { margin: 0; color: #51473c; font-size: .75rem; }
+  .photo-viewer [hidden] { display: none; }
+  .is-transitioning .photo-viewer__caption, .is-transitioning .photo-viewer__toolbar, .is-transitioning button { opacity: 0; }
+  @keyframes photo-frost-in { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(18px); } }
+  @keyframes photo-frost-out { from { opacity: 1; } to { opacity: 0; } }
+  @media (max-width: 600px) {
+    .photo-wall { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .photo-tile { padding: 4px; border-radius: 5px; }
+    .photo-caption__settings { gap: 8px 16px; }
+    .photo-expand { display: none; }
+
+    .photo-viewer__caption { padding: 14px 6px 10px; }
+    .photo-viewer__prev, .photo-viewer__next { top: auto; bottom: -56px; }
+    .photo-viewer__prev { left: calc(50% - 48px); }
+    .photo-viewer__next { right: calc(50% - 48px); }
+    .photo-viewer__toolbar { inset: 16px 16px auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .photo-open img, .photo-expand, .photo-viewer__caption, .photo-viewer button { transition: none; }
+    .photo-viewer::backdrop { animation: none; }
+  }
+</style>

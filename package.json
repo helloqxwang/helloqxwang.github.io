@@ -1,6 +1,25 @@
 {
-  "devDependencies": {
-    "@shopify/prettier-plugin-liquid": "1.4.0",
-    "prettier": "3.1.1"
-  }
+  "name": "helloqxwang-github-io",
+  "version": "1.0.0",
+  "description": "Academic website for Qianxu Wang.",
+  "type": "module",
+  "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
+    "start": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 astro check && ASTRO_TELEMETRY_DISABLED=1 astro build",
+    "preview": "ASTRO_TELEMETRY_DISABLED=1 astro preview",
+    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check",
+    "publish:static": "npm run build && node scripts/publish-static.mjs",
+    "media:setup": "python3 -m venv .media-venv && .media-venv/bin/python -m pip install -r scripts/media-requirements.txt",
+    "media:prepare": "node scripts/prepare-media.mjs",
+    "prebuild": "npm run media:prepare",
+    "predev": "npm run media:prepare",
+    "prestart": "npm run media:prepare"
+  },
+  "dependencies": {
+    "@astrojs/check": "latest",
+    "astro": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {}
 }

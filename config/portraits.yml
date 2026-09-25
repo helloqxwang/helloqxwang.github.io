@@ -1,0 +1,26 @@
+# New image files in headshots/ are discovered automatically at preview/build time.
+# While preview is running, changes here or in headshots/ also trigger processing.
+# YuNet locates the face; these rules add hair, shoulders, and surrounding context.
+# Multiple faces: select the largest face by default, or set face_index (left to right).
+defaults:
+  context: 3.8        # Crop height relative to the detected face height.
+  face_position: 0.36 # Vertical position of the face centre within the crop.
+portraits:
+  - file: DSC02129.heic
+    alt: Qianxu on a boat with mountains in the background
+  - file: DSC07551.AVIF
+    alt: Qianxu in a yellow jacket on the water near a glacier
+  - file: DSC02370.AVIF
+    alt: Qianxu holding a camera beside the water at night
+  - file: DSC00371.AVIF
+    alt: Qianxu on a mountain above a lake
+  - file: DSC05875.JPG
+    alt: Qianxu holding both thumbs up in an ornate hall
+  - file: IMG_1741.HEIC
+    alt: Qianxu wearing a cycling helmet and giving a thumbs up
+# Optional overrides for any entry:
+#   context: 4.2
+#   face_index: 0
+#   live: IMG_1741.MOV # Optional paired video; same-stem MOV/MP4 is auto-discovered.
+#   crop: [0.2, 0.1, 0.4, 0.5] # normalized x, y, width, height; must be 4:5 in pixels
+# If no face is detected, the build asks for a crop instead of silently cropping badly.
